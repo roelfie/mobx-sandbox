@@ -40,92 +40,157 @@ See also the MobX 6 cheat sheet
 
 Actions change state, and MobX ensures that these changes are automatically processed by all derivations and reactions.
 
+### Note on decorators
+
+[MobX 6](https://michel.codes/blogs/mobx6) recommends against [using decorators](https://www.mobxjs.com/best/decorators.html).
+
 # MobX
 
 ### Observable state
 
-#### `makeObservable(target, annotations?, options?)`
+There are different way to mark state as [observable](https://mobx.js.org/observable-state.html#observable).
 
-Use in class constructors:
+See the [React docs](https://mobx.js.org/observable-state.html) and the _Observable_ examples under the mobx6 app in this project.
 
-```js
-import { makeObservable, observable, computed, action } from 'mobx';
+- `makeObservable(target, annotations?, options?)`
+  - Recommended API for [factory functions](https://medium.com/javascript-scene/javascript-factory-functions-with-es6-4d224591a8b1) and class instances
+  - Pro: Fast because no proxy involved
+  - Con: Dynamically added properties are not made observable
+  - [Private class fields](https://www.sitepoint.com/javascript-private-class-fields/) are not made observable
+  - Fields from super or subclasses are not made observable
+- `makeAutoObservable(target, overrides?, options?)`
+  - Like `makeObservable` but with less boiler plate code. Defaults:
+    - functions are annotated with `autoAction`
+    - `get` ters are annotated with `computed`
+    - fields are marked with `observable`
+  - Use when no properties are dynamically added
+- `observable(source, overrides?, options?)`
+  - Similar to `makeAutoObservable`
+  - But makes a clone of the original object
+  - Wraps it in a proxy to detect dynamically added properties and mark them as observable
+  - Slightly slower (and harder to inspect) than `make(Auto)Observable`
 
-class Doubler {
-  value;
-
-  constructor(value) {
-    makeObservable(this, {
-      value: observable,
-      double: computed,
-      increment: action
-    });
-    this.value = value;
-  }
-
-  get double() {
-    return this.value * 2;
-  }
-
-  increment() {
-    this.value++;
-  }
-}
-```
-
-The second argument maps annotations (observable, computed, action) to class members.
-
-- only supports properties that are already defined (make sure your compiler configuration is correct, or that a value is assigned to all properties before using makeObservable)
-- cannot annotate properties from sub- or superclasses (call `makeObservable()` for such properties explicitly)
-- JavaScript private fields are not supported
-
-#### `makeAutoObservable(target, overrides?, options?)`
-
-Used with [factory functions](https://medium.com/javascript-scene/javascript-factory-functions-with-es6-4d224591a8b1):
-
-```js
-import { makeAutoObservable } from 'mobx';
-
-function createDoubler(value) {
-  return makeAutoObservable({
-    value,
-    get double() {
-      return this.value * 2;
-    },
-    increment() {
-      this.value++;
-    }
-  });
-}
-```
-
-#### `observable(source, overrides?, options?)`
-
-Wraps the object in a proxy (to allow adding dynamic properties) so is slightly slower than make(Auto)Observable.
-
-https://mobx.js.org/observable-state.html#observable
+Factory functions vs. constructors on [Stackoverflow](https://stackoverflow.com/questions/8698726/constructor-function-vs-factory-functions).
 
 ### Actions
 
-MobX strict mode? Doesn't allow changing state other than through actions?
+An action is a piece of code that modifies state. It happens in response to an event (button clicked, message arrived, ..).
+
+You can use `makeAutoObservable` or `observable` to automatically mark functions as `action`, or use `makeObservable`.
+
+#### Transactions
+
+Actions are transactional. No observer is updated until the outer-most action has finished.
+
+From the [documentation](https://mobx.js.org/actions.html#wrapping-functions-using-action): _To leverage the transactional nature of MobX as much as possible, actions should be passed as far outward as possible. It is good to mark a class method as an action if it modifies the state. It is even better to mark event handlers as actions, as it is the outer-most transaction that counts. A single unmarked event handler that calls two actions subsequently would still generate two transactions._
+
+So in addition to marking actions on your store as `action` you can also wrap multiple action calls in one outer transaction, as follows:
+
+```js
+import { action } from 'mobx';
+
+const ResetButton = ({ formState }) => (
+  <button
+    onClick={action((e) => {
+      formState.resetPendingUploads();
+      formState.resetValues();
+      e.stopPropagation();
+    })}
+  >
+    Reset form
+  </button>
+);
+```
+
+#### Strict mode
+
+MobX 6 by default does not allow changing state outside of actions. This is called _strict mode_. You can configure this behavior with the [enforceActions](https://mobx.js.org/configuration.html#enforceactions) parameter:
+
+```js
+import { configure } from 'mobx';
+
+configure({
+  enforceActions: 'never'
+});
+```
+
+Possible values: `never`, `observed` (default) and `always` (includes state creation).
+
+#### Asynchronous actions
+
+Every step that updates observables in an asynchronous process should be marked as action. When working with promises, there are two ways to accomplish that:
+
+Wrap inline handlers inside actions (ugly):
+
+```js
+class Store {
+  githubProjects = [];
+  state = 'pending'; // "pending", "done" or "error"
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  fetchProjects() {
+    this.githubProjects = [];
+    this.state = 'pending';
+    fetchGithubProjectsSomehow().then(
+      action('fetchSuccess', (projects) => {
+        const filteredProjects = somePreprocessing(projects);
+        this.githubProjects = filteredProjects;
+        this.state = 'done';
+      }),
+      action('fetchError', (error) => {
+        this.state = 'error';
+      })
+    );
+  }
+}
+```
+
+Or define handlers as seperate actions (much more readable):
+
+```js
+class Store {
+  githubProjects = [];
+  state = 'pending'; // "pending", "done" or "error"
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  fetchProjects() {
+    this.githubProjects = [];
+    this.state = 'pending';
+    fetchGithubProjectsSomehow().then(this.projectsFetchSuccess, this.projectsFetchFailure);
+  }
+
+  projectsFetchSuccess = (projects) => {
+    const filteredProjects = somePreprocessing(projects);
+    this.githubProjects = filteredProjects;
+    this.state = 'done';
+  };
+
+  projectsFetchFailure = (error) => {
+    this.state = 'error';
+  };
+}
+```
 
 ### Computeds
 
-#### TODO
+Computed values can be used to derive information from other observables.
 
-How to use the following:
+- They evaluate lazily
+- Their output is cached
+- They are only recomputed if underlying observable(s) have changed
+- If they are not observed by anything, they suspend entirely
+- They should not update state or have other side effects
 
-- observable
-  - observable.ref
-  - observable.shallow
-- action
-- computed
-- autorun
-- flow
-- makeObservable
-- makeAutoObservable
+Computed values help in reducing the amount of state you have to store. They are highly optimized.
 
-Factory functions vs. constructors on [Stackoverflow](https://stackoverflow.com/questions/8698726/constructor-function-vs-factory-functions).
+Define computed values using [JavaScript getters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get).
+Use `makeAutoObservable` or `observable` to automatically declare them as computeds, or use `makeObservable` with the `computed` annotation.
 
 # React and MobX
 
@@ -151,7 +216,3 @@ In general there are three ways in which you can pass stores in MobX
 3. Pass stores around via React's context mechanism. Redux's Provider uses that, as does the mobx-connect package. Context is passed implicitly and deep component can extract data out of the context, but it is still easy to test as you only have to make sure you set up some context before testing the component.
 
 # React and MobX with Hooks
-
-# Decorators
-
-[MobX 6](https://michel.codes/blogs/mobx6) recommends against [using decorators](https://www.mobxjs.com/best/decorators.html).
