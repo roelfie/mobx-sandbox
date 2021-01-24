@@ -4,7 +4,7 @@ import ObservableExamples from './ObservableExamples';
 function App() {
   return (
     <div className='ui container'>
-      <h2>MobX 6</h2>
+      <h1 className='ui header'>MobX 6</h1>
       <ObservableExamples />
     </div>
   );

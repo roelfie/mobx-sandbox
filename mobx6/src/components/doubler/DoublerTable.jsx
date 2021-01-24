@@ -4,10 +4,10 @@ import { observer } from 'mobx-react';
 const DoublerTable = observer(({ doubler }) => {
   const { value, double } = doubler;
   return (
-    <table className='ui celled table'>
+    <table className='ui definition table'>
       <thead>
         <tr>
-          <th>Property</th>
+          <th></th>
           <th>Value</th>
           <th>MobX</th>
         </tr>
@@ -24,12 +24,12 @@ const DoublerTable = observer(({ doubler }) => {
           <td>computed</td>
         </tr>
         <tr>
-          <td>increment()</td>
           <td>
             <button className='tiny ui button' onClick={() => doubler.increment()}>
-              Increment
+              increment()
             </button>
           </td>
+          <td></td>
           <td>action</td>
         </tr>
       </tbody>

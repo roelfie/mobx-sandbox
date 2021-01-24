@@ -1,4 +1,5 @@
 import { makeAutoObservable } from 'mobx';
+import { sourceCode, moreInfo } from './Doubler_FactoryFunction_MakeAutoObservable.meta.js';
 
 const createDoubler = (value) => {
   return makeAutoObservable({
@@ -9,17 +10,8 @@ const createDoubler = (value) => {
     increment() {
       this.value++;
     },
-    sourceCode: `const createDoubler = (value) => {
-  return makeAutoObservable({
-    value, 
-    get double() {
-      return value * 2
-    },
-    increment() {
-      this.value++;
-    }
-  })
-}`
+    sourceCode: sourceCode,
+    moreInfo: moreInfo
   });
 };
 
