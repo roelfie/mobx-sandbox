@@ -4,7 +4,7 @@ import { observer } from 'mobx-react';
 const DoublerTable = observer(({ doubler }) => {
   const { value, double } = doubler;
   return (
-    <table className='ui definition table'>
+    <table className='ui basic compact definition table'>
       <thead>
         <tr>
           <th></th>

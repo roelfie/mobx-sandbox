@@ -1,5 +1,5 @@
 export const sourceCode = `const createDoubler = (value) => {
-  return makeObservable({
+  return makeAutoObservable({
     value, 
     get double() {
       return value * 2

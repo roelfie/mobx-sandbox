@@ -7,8 +7,8 @@ import Accordion from '../Accordion';
 const DoublerView = observer(
   class DoublerView extends React.Component {
     renderMoreInfo(infos) {
-      const renderedInfos = infos.map((info) => {
-        return <li dangerouslySetInnerHTML={{ __html: info }} />;
+      const renderedInfos = infos.map((info, ix) => {
+        return <li dangerouslySetInnerHTML={{ __html: info }} key={ix} />;
       });
       return <ul>{renderedInfos}</ul>;
     }

@@ -20,6 +20,5 @@ export const sourceCode = `class Doubler {
 export const moreInfo = [
   'Makes existing object properties observable',
   '2nd argument are <a href="https://mobx.js.org/observable-state.html#available-annotations" target="_new">annotations</a>',
-  'Annotations can be omitted when using decorators (e.g. @observable)',
   'Dynamically added fields will not be made observable'
 ];

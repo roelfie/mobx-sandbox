@@ -101,19 +101,15 @@ function createDoubler(value) {
 
 #### `observable(source, overrides?, options?)`
 
-See examples. Does not work for classes or factory functions?
-
---> observable wraps the object in a proxy (to allow adding dynamic properties) so is slightly slower than make(Auto)Observable.
+Wraps the object in a proxy (to allow adding dynamic properties) so is slightly slower than make(Auto)Observable.
 
 https://mobx.js.org/observable-state.html#observable
 
-Documentation: Class instances will never be made observable automatically by passing them to observable or assigning them to an observable property. Making class members observable is considered the responsibility of the class constructor.
+### Actions
 
-The primary difference between make(Auto)Observable and observable is that the first one modifies the object you are passing in as first argument, while observable creates a clone that is made observable.
+MobX strict mode? Doesn't allow changing state other than through actions?
 
-The second difference is that observable creates a Proxy object, to be able to trap future property additions in case you use the object as a dynamic lookup map. If the object you want to make observable has a regular structure where all members are known up-front, we recommend to use makeObservable as non proxied objects are a little faster, and they are easier to inspect in the debugger and console.log.
-
-Because of that, make(Auto)Observable is the recommended API to use in factory functions. Note that it is possible to pass { proxy: false } as an option to observable to get a non proxied clone.
+### Computeds
 
 #### TODO
 
@@ -130,8 +126,6 @@ How to use the following:
 - makeAutoObservable
 
 Factory functions vs. constructors on [Stackoverflow](https://stackoverflow.com/questions/8698726/constructor-function-vs-factory-functions).
-
-MobX strict mode? Doesn't allow changing state other than through actions?
 
 # React and MobX
 
